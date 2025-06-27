@@ -1,0 +1,7 @@
+beautifulsoup4
+httpx
+tenacity
+fake-useragent
+streamlit
+pandas
+networkx
