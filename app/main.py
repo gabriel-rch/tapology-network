@@ -2,6 +2,21 @@ import streamlit as st
 import pandas as pd
 from services.tapology import search_fighter_by_name
 from services.crawler import scrape_fighter_network
+from core.graph import FighterGraph
+from pyvis.network import Network
+import streamlit.components.v1 as components
+
+# --- Sidebar ---
+st.sidebar.title("About")
+st.sidebar.markdown(
+    """
+    **Tapology Fighter Network Crawler**  
+    This tool lets you search for MMA fighters, view their fight history, and explore their network of opponents using data from Tapology.  
+    - Search for a fighter by name  
+    - Select a fighter to view their fight network  
+    - Download the raw fight data as CSV  
+    """
+)
 
 st.set_page_config(page_title="Tapology Fighter Network Crawler", layout="wide")
 
@@ -76,40 +91,50 @@ if st.session_state.selected_fighter:
             except Exception as e:
                 st.error(f"Error generating network: {str(e)}")
 
-    # Display network data
+    # Display network graph with Pyvis
     if st.session_state.network_data:
-        st.subheader("📊 Network Data")
+        st.subheader("🕸️ Interactive Network Graph")
+        df = pd.DataFrame(st.session_state.network_data)
+        if not df.empty:
+            fg = FighterGraph()
+            fg.build_from_dataframe(df)
+            G = fg.graph
 
-        if st.session_state.network_data:
-            df = pd.DataFrame(st.session_state.network_data)
-
-            # Display summary stats
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Total Fights", len(df))
-            with col2:
-                st.metric("Unique Fighters", df["fighter_id"].nunique())
-            with col3:
-                st.metric("Unique Opponents", df["opponent_fighter_id"].nunique())
-            with col4:
-                wins = len(df[df["decision"].str.contains("Win", case=False, na=False)])
-                st.metric("Wins in Network", wins)
-
-            # Display raw data
-            st.subheader("🗂️ Raw Fight Data")
-            st.dataframe(
-                df[["fighter_name", "opponent_name", "decision", "method", "event"]],
-                use_container_width=True,
+            net = Network(
+                height="600px", width="100%", notebook=False, bgcolor="#222222", font_color="white"
             )
+            for node in G.nodes():
+                net.add_node(node, label=node)
+            for source, target, data in G.edges(data=True):
+                label = f"{data.get('decision', '')} ({data.get('method', '')})"
+                net.add_edge(source, target, title=label)
 
-            # Download button
-            csv = df.to_csv(index=False)
-            st.download_button(
-                label="📥 Download CSV",
-                data=csv,
-                file_name=f"{st.session_state.selected_fighter['name']}_network.csv",
-                mime="text/csv",
-            )
+            net.set_options("""
+            var options = {
+              "nodes": {
+                "font": {
+                  "size": 18,
+                  "color": "white"
+                }
+              },
+              "edges": {
+                "color": {
+                  "color": "#AAAAAA"
+                }
+              },
+              "physics": {
+                "barnesHut": {
+                  "gravitationalConstant": -8000,
+                  "centralGravity": 0.3,
+                  "springLength": 95
+                }
+              }
+            }
+            """)
+            net.save_graph("fighter_network.html")
+            with open("fighter_network.html", "r", encoding="utf-8") as f:
+                html_string = f.read()
+            components.html(html_string, height=650, scrolling=True)
         else:
             st.info("No fight data found for this fighter.")
 
