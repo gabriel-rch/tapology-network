@@ -6,3 +6,4 @@ streamlit
 pandas
 networkx
 pyvis
+nxviz

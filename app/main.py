@@ -3,7 +3,6 @@ import pandas as pd
 from services.tapology import search_fighter_by_name
 from services.crawler import scrape_fighter_network
 from core.graph import FighterGraph
-from pyvis.network import Network
 import streamlit.components.v1 as components
 
 # --- Sidebar ---
@@ -93,48 +92,54 @@ if st.session_state.selected_fighter:
 
     # Display network graph with Pyvis
     if st.session_state.network_data:
-        st.subheader("🕸️ Interactive Network Graph")
         df = pd.DataFrame(st.session_state.network_data)
         if not df.empty:
             fg = FighterGraph()
             fg.build_from_dataframe(df)
             G = fg.graph
 
-            net = Network(
-                height="600px", width="100%", notebook=False, bgcolor="#222222", font_color="white"
-            )
-            for node in G.nodes():
-                net.add_node(node, label=node)
-            for source, target, data in G.edges(data=True):
-                label = f"{data.get('decision', '')} ({data.get('method', '')})"
-                net.add_edge(source, target, title=label)
+            # Display network statistics
+            st.subheader("📊 Network Statistics")
+            stats = fg.get_stats()
+            col1, col2, col3, col4 = st.columns(4)
 
-            net.set_options("""
-            var options = {
-              "nodes": {
-                "font": {
-                  "size": 18,
-                  "color": "white"
-                }
-              },
-              "edges": {
-                "color": {
-                  "color": "#AAAAAA"
-                }
-              },
-              "physics": {
-                "barnesHut": {
-                  "gravitationalConstant": -8000,
-                  "centralGravity": 0.3,
-                  "springLength": 95
-                }
-              }
-            }
-            """)
-            net.save_graph("fighter_network.html")
-            with open("fighter_network.html", "r", encoding="utf-8") as f:
-                html_string = f.read()
-            components.html(html_string, height=650, scrolling=True)
+            with col1:
+                st.metric("Fighters", stats["nodes"])
+            with col2:
+                st.metric("Fights", stats["edges"])
+            with col3:
+                st.metric("Density", f"{stats['density']:.3f}")
+            with col4:
+                st.metric("Graph Type", "Directed" if stats["is_directed"] else "Undirected")
+
+            # Display top fighters by wins
+            if G.number_of_nodes() > 0:
+                st.subheader("🏆 Top Fighters by Wins")
+                top_fighters = fg.get_top_fighters_by_wins(top_n=5)
+                for i, (fighter, wins) in enumerate(top_fighters, 1):
+                    fighter_stats = fg.get_fighter_stats(fighter)
+                    st.write(
+                        f"{i}. **{fighter}** - {wins} wins, {fighter_stats['losses']} losses (Win rate: {fighter_stats['win_rate']:.1%})"
+                    )
+
+            st.subheader("🕸️ Interactive Network Graph")
+            st.info(
+                "🔍 **How to read the graph:** Arrows point from winner to loser. Hover over edges to see fight details."
+            )
+
+            # Generate and display the interactive network graph
+            html_content = fg.export_to_html("fighter_network.html")
+            components.html(html_content, height=650, scrolling=True)
+
+            # Download section
+            st.subheader("💾 Download Data")
+            csv_data = df.to_csv(index=False)
+            st.download_button(
+                label="Download Fight Data as CSV",
+                data=csv_data,
+                file_name=f"{st.session_state.selected_fighter['name'].replace(' ', '_')}_network.csv",
+                mime="text/csv",
+            )
         else:
             st.info("No fight data found for this fighter.")
 

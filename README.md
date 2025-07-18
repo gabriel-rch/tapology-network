@@ -22,9 +22,9 @@
 
 ```
 tapology-network/
-├── article.ipynb          # Research article and methodology
-├── README.md             # This file
-├── requirements.txt      # Python dependencies
+├── article.ipynb        # Research article and methodology
+├── README.md            # This file
+├── requirements.txt     # Python dependencies
 └── app/
     ├── main.py          # Streamlit web application
     ├── core/
