@@ -11,7 +11,9 @@ def search_fighter_by_name(fighter_name: str) -> str:
         soup = scraper.get(url)
 
     results = soup.find("div", {"class": "searchResultsFighter"})
-    fighters = [{"name": a.text.strip(), "link": a.get("href")} for a in results.find_all("a")]
+    fighters = [
+        {"name": a.text.strip(), "link": a.get("href")} for a in results.find_all("a")
+    ]
     return fighters
 
 
