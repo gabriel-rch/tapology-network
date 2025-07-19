@@ -30,42 +30,43 @@ if "selected_fighter" not in st.session_state:
 if "network_data" not in st.session_state:
     st.session_state.network_data = None
 
-# Search section
-st.header("🔍 Search Fighter")
-col1, col2 = st.columns([3, 1])
 
-with col1:
-    search_query = st.text_input("Enter fighter name:", placeholder="e.g., Ilia Topuria")
+with st.form("search_form"):
+    # Search section
+    st.header("🔍 Search Fighter")
+    col1, col2 = st.columns([3, 1])
 
-with col2:
-    st.write("")  # Empty space for alignment
-    search_button = st.button("Search", type="primary")
+    with col1:
+        search_query = st.text_input(
+            "Fighter Name",
+            placeholder="e.g., Ilia Topuria",
+            label_visibility="collapsed",
+        )
 
-if search_button and search_query:
-    with st.spinner("Searching for fighters..."):
-        try:
-            results = search_fighter_by_name(search_query)
-            st.session_state.search_results = results
-            st.session_state.selected_fighter = None
-            st.session_state.network_data = None
-        except Exception as e:
-            st.error(f"Error searching for fighters: {str(e)}")
+    with col2:
+        search_button = st.form_submit_button("Search", type="primary")
+
+    if search_button and search_query:
+        with st.spinner("Searching for fighters..."):
+            try:
+                results = search_fighter_by_name(search_query)
+                st.session_state.search_results = results
+                st.session_state.selected_fighter = None
+                st.session_state.network_data = None
+            except Exception as e:
+                st.error(f"Error searching for fighters: {str(e)}")
 
 # Display search results
 if st.session_state.search_results:
-    st.header("📋 Search Results")
-
-    for i, fighter in enumerate(st.session_state.search_results):
-        col1, col2 = st.columns([3, 1])
-
-        with col1:
-            st.write(f"**{fighter['name']}**")
-            st.write(f"Profile: {fighter['link']}")
-
-        with col2:
-            fighter_id = fighter["link"].split("/")[-1]
-            if st.button("Select", key=f"select_{i}"):
-                st.session_state.selected_fighter = {"name": fighter["name"], "id": fighter_id}
+    with st.container(height=300):
+        for i, fighter in enumerate(st.session_state.search_results):
+            if st.button(
+                f"**{fighter['name']}**", key=f"fighter_{i}", use_container_width=True
+            ):
+                st.session_state.selected_fighter = {
+                    "name": fighter["name"],
+                    "link": fighter["link"],
+                }
                 st.session_state.network_data = None
 
 # Fighter network section
@@ -110,7 +111,9 @@ if st.session_state.selected_fighter:
             with col3:
                 st.metric("Density", f"{stats['density']:.3f}")
             with col4:
-                st.metric("Graph Type", "Directed" if stats["is_directed"] else "Undirected")
+                st.metric(
+                    "Graph Type", "Directed" if stats["is_directed"] else "Undirected"
+                )
 
             # Display top fighters by wins
             if G.number_of_nodes() > 0:
