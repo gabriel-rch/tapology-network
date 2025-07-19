@@ -65,7 +65,7 @@ if st.session_state.search_results:
             ):
                 st.session_state.selected_fighter = {
                     "name": fighter["name"],
-                    "link": fighter["link"],
+                    "id": fighter["link"].split("/")[-1],
                 }
                 st.session_state.network_data = None
 
@@ -96,7 +96,9 @@ if st.session_state.selected_fighter:
         df = pd.DataFrame(st.session_state.network_data)
         if not df.empty:
             fg = FighterGraph()
-            fg.build_from_dataframe(df)
+            fg.build_from_dataframe(
+                df, origin_id=st.session_state.selected_fighter["id"]
+            )
             G = fg.graph
 
             # Display network statistics
@@ -148,4 +150,6 @@ if st.session_state.selected_fighter:
 
 # Footer
 st.markdown("---")
-st.markdown("Built with ❤️ using Streamlit and Tapology data")
+st.markdown(
+    "Built with ❤️ using Streamlit and [Tapology](https://www.tapology.com) data"
+)

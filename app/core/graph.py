@@ -12,6 +12,7 @@ class FighterGraph:
 
     def __init__(self):
         self.graph = nx.DiGraph()
+        self.origin = None
 
     def _filter_ufc_bouts(self, df: pd.DataFrame):
         """
@@ -19,13 +20,16 @@ class FighterGraph:
         """
         return df[(df["event"] == "UFC") & (df["decision"].isin(["W", "L"]))]
 
-    def build_from_dataframe(self, df: pd.DataFrame):
+    def build_from_dataframe(self, df: pd.DataFrame, origin_id: str = None):
         """
         Build a network graph from fighter bout data.
         Creates directed edges from winner to loser.
         """
-        filtered_df = self._filter_ufc_bouts(df)
+        if origin_id:
+            origin_fighter = df.loc[df["fighter_id"] == origin_id]
+            self.origin = origin_fighter["fighter_name"].values[0]
 
+        filtered_df = self._filter_ufc_bouts(df)
         for _, row in filtered_df.iterrows():
             fighter = row["fighter_name"]
             opponent = row["opponent_name"]
@@ -119,7 +123,8 @@ class FighterGraph:
 
         # Add nodes
         for node in self.graph.nodes():
-            net.add_node(node, label=node)
+            color = "#FF5733" if node == self.origin else "#1f77b4"
+            net.add_node(node, label=node, color=color)
 
         # Add edges with fight details
         for source, target, data in self.graph.edges(data=True):
