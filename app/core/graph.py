@@ -146,6 +146,7 @@ class FighterGraph:
                 }
             },
         }
+
         net.set_options(f"var options = {json.dumps(options)}")
 
         # Save and return HTML content
@@ -164,7 +165,7 @@ class FighterGraph:
         html {{
             background-color: {background_color} !important;
         }}
-        #mynetworkid {{
+        #mynetwork {{
             background-color: #222222 !important;
         }}
         </style>
